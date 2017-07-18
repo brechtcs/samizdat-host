@@ -5,7 +5,7 @@ var level = require('level')
 var minimist = require('minimist')
 
 var opts = minimist(process.argv.slice(2))
-var server = host(level('data'), {
+var server = host(level(opts.db || opts.d || 'data'), {
     logLevel: opts.silent || opts.s ? 'fatal' : 'info'
 })
 
