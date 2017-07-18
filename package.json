@@ -1,0 +1,11 @@
+{
+  "name": "samizdat-host",
+  "bin": {
+    "samizdat": "server.js"
+  },
+  "dependencies": {
+    "level": "^1.7.0",
+    "merry": "^5.3.3",
+    "minimist": "^1.2.0"
+  }
+}
