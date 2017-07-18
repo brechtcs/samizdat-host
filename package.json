@@ -1,6 +1,6 @@
 {
   "name": "samizdat-host",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "main": "index.js",
   "bin": {
     "samizdat": "server.js"
@@ -8,7 +8,8 @@
   "dependencies": {
     "level": "^1.7.0",
     "merry": "^5.3.3",
-    "minimist": "^1.2.0"
+    "minimist": "^1.2.0",
+    "samizdat": "^2.0.0"
   },
   "devDependencies": {},
   "repository": {

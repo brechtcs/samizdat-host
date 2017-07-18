@@ -1,6 +1,6 @@
 var merry = require('merry')
-var samizdat = require('../samizdat')
-var util = require('../samizdat/key')
+var samizdat = require('samizdat')
+var util = require('samizdat/key')
 
 module.exports = function (db, opts) {
     if (!opts) {
