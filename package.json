@@ -1,26 +1,23 @@
 {
   "name": "samizdat-host",
-  "version": "1.1.1",
+  "version": "2.0.0",
   "main": "index.js",
-  "bin": {
-    "samizdat": "server.js"
+  "scripts": {
+    "test": "node test.js | merry"
   },
   "dependencies": {
     "level": "^1.7.0",
     "merry": "^5.3.3",
-    "minimist": "^1.2.0",
-    "samizdat": "^2.0.0"
+    "samizdat-db": "^1.0.0"
   },
   "devDependencies": {},
   "repository": {
     "type": "git",
     "url": "git+https://github.com/distilledpm/samizdat-host.git"
   },
-  "author": "",
-  "license": "MIT",
   "bugs": {
     "url": "https://github.com/distilledpm/samizdat-host/issues"
   },
-  "homepage": "https://github.com/distilledpm/samizdat-host#readme",
-  "description": ""
+  "author": "",
+  "license": "MIT"
 }

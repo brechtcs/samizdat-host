@@ -1,6 +1,5 @@
 var merry = require('merry')
-var samizdat = require('samizdat')
-var util = require('samizdat/key')
+var samizdat = require('samizdat-db')
 
 module.exports = function (db, opts) {
     if (!opts) {
@@ -13,26 +12,25 @@ module.exports = function (db, opts) {
     var db = samizdat(db)
     var host = merry(opts)
 
-    host.route('GET', '/docs/:id', function (req, res, app) {
-        var found = false
+    host.route('GET', '/docs', function (req, res, app) {
+        db.docs(function (err, docs) {
+            if (err) {
+                app.send(500, 'server error\n')
+                return app.log.error(err)
+            }
 
-        db._level.createKeyStream().on('data', function (key) {
-            if (util.getId(key) === app.params.id) {
-                if (!found) {
-                    found = true
-                    res.writeHead(200)
-                }
-                res.write(key)
-                res.write('\n')
+            app.send(200, docs.join('\n') + '\n')
+        })
+    })
+
+    host.route('GET', '/docs/:id', function (req, res, app) {
+        db.versions(app.params.id, function (err, versions) {
+            if (err) {
+                app.send(500, 'server error\n')
+                return app.log.error(err)
             }
-        }).on('end', function () {
-            if (!found) {
-                res.writeHead(404)
-                res.end('document not found\n')
-            }
-            else {
-                res.end()
-            }
+
+            app.send(200, versions.join('\n') + '\n')
         })
     })
 
@@ -46,8 +44,8 @@ module.exports = function (db, opts) {
         req.on('end', function () {
             db.create(app.params.id, body, function (err, data) {
                 if (err) {
-                    if (err.idExists) app.send(400, 'document already exists\n')
-                    else app.send(500, 'host error\n')
+                    if (err.docExists) app.send(400, 'document already exists\n')
+                    else app.send(500, 'server error\n')
                     return app.log.error(err)
                 }
 
@@ -57,19 +55,25 @@ module.exports = function (db, opts) {
     })
 
     host.route('GET', '/versions/:version', function (req, res, app) {
-        if (!util.validateKey(app.params.version)) {
-            app.send(400, 'not a valid version key\n')
-            return app.log.error(app.params.version)
-        }
-
-        db.read(app.params.version, function (err, data) {
+        db.read(app.params.version, function (err, value) {
             if (err)  {
                 if (err.notFound) app.send(404, 'not found\n')
-                else app.send(500, 'host error \n')
+                else app.send(500, 'server error\n')
                 return app.log.error(err)
             }
 
-            app.send(200, data.value)
+            app.send(200, value)
+        })
+    })
+
+    host.route('DELETE', '/versions/:version', function (req, res, app) {
+        db.del(app.params.version, function (err) {
+            if (err) {
+                app.send(500, 'server error\n')
+                return app.log.error(err)
+            }
+
+            app.send(204, app.params.version)
         })
     })
 
@@ -83,7 +87,7 @@ module.exports = function (db, opts) {
         req.on('end', function () {
             db.update(app.params.version, body, function (err, data) {
                 if (err) {
-                    app.send(500, 'host error\n')
+                    app.send(500, 'server error\n')
                     return app.log.error(err)
                 }
 
