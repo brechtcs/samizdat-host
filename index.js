@@ -15,22 +15,26 @@ module.exports = function (db, opts) {
     host.route('GET', '/docs', function (req, res, app) {
         db.docs(function (err, docs) {
             if (err) {
-                app.send(500, 'server error\n')
+                res.writeHead(500)
+                res.end('server error\n')
                 return app.log.error(err)
             }
 
-            app.send(200, docs.join('\n') + '\n')
+            res.writeHead(200)
+            res.end(docs.join('\n') + '\n')
         })
     })
 
     host.route('GET', '/docs/:id', function (req, res, app) {
         db.versions(app.params.id, function (err, versions) {
             if (err) {
-                app.send(500, 'server error\n')
+                res.writeHead(500)
+                res.end('server error\n')
                 return app.log.error(err)
             }
 
-            app.send(200, versions.join('\n') + '\n')
+            res.writeHead(200)
+            res.end(versions.join('\n') + '\n')
         })
     })
 
@@ -44,12 +48,19 @@ module.exports = function (db, opts) {
         req.on('end', function () {
             db.create(app.params.id, body, function (err, data) {
                 if (err) {
-                    if (err.docExists) app.send(400, 'document already exists\n')
-                    else app.send(500, 'server error\n')
+                    if (err.docExists) {
+                        res.writeHead(400)
+                        res.end('document already exists\n')
+                    }
+                    else {
+                        res.writeHead(500)
+                        res.end('server error\n')
+                    }
                     return app.log.error(err)
                 }
 
-                app.send(204, data.key)
+                res.writeHead(204)
+                res.end(data.key)
             })
         })
     })
@@ -57,23 +68,32 @@ module.exports = function (db, opts) {
     host.route('GET', '/versions/:version', function (req, res, app) {
         db.read(app.params.version, function (err, value) {
             if (err)  {
-                if (err.notFound) app.send(404, 'not found\n')
-                else app.send(500, 'server error\n')
+                if (err.notFound) {
+                    res.writeHead(404)
+                    res.end('not found\n')
+                }
+                else {
+                    res.writeHead(500)
+                    res.end('server error\n')
+                }
                 return app.log.error(err)
             }
 
-            app.send(200, value)
+            res.writeHead(200)
+            res.end(value)
         })
     })
 
     host.route('DELETE', '/versions/:version', function (req, res, app) {
         db.del(app.params.version, function (err) {
             if (err) {
-                app.send(500, 'server error\n')
+                res.writeHead(500)
+                res.end('server error\n')
                 return app.log.error(err)
             }
 
-            app.send(204, app.params.version)
+            res.writeHead(204)
+            res.end(app.params.version)
         })
     })
 
@@ -87,11 +107,13 @@ module.exports = function (db, opts) {
         req.on('end', function () {
             db.update(app.params.version, body, function (err, data) {
                 if (err) {
-                    app.send(500, 'server error\n')
+                    res.writeHead(500)
+                    res.end('server error\n')
                     return app.log.error(err)
                 }
 
-                app.send(204, data.key)
+                res.writeHead(204)
+                res.end(data.key)
             })
         })
     })
