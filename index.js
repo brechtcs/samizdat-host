@@ -1,5 +1,7 @@
 var merry = require('merry')
+var qs = require('querystring')
 var samizdat = require('samizdat-db')
+var url = require('url')
 
 module.exports = function (db, opts) {
     if (!opts) {
@@ -20,6 +22,9 @@ module.exports = function (db, opts) {
                 return app.log.error(err)
             }
 
+            if (isJsonRequest(req)) {
+                return app.send(200, docs)
+            }
             res.writeHead(200)
             res.end(docs.join('\n') + '\n')
         })
@@ -33,6 +38,9 @@ module.exports = function (db, opts) {
                 return app.log.error(err)
             }
 
+            if (isJsonRequest(req)) {
+                return app.send(200, versions)
+            }
             res.writeHead(200)
             res.end(versions.join('\n') + '\n')
         })
@@ -59,8 +67,11 @@ module.exports = function (db, opts) {
                     return app.log.error(err)
                 }
 
+                if (isJsonRequest(req)) {
+                    return app.send(200, {key: data.key})
+                }
                 res.writeHead(204)
-                res.end(data.key)
+                res.end()
             })
         })
     })
@@ -79,6 +90,9 @@ module.exports = function (db, opts) {
                 return app.log.error(err)
             }
 
+            if (isJsonRequest(req)) {
+                return app.send(200, {key: app.params.version, value: value})
+            }
             res.writeHead(200)
             res.end(value)
         })
@@ -92,8 +106,11 @@ module.exports = function (db, opts) {
                 return app.log.error(err)
             }
 
+            if (isJsonRequest(req)) {
+                return app.send(200, {key: app.params.version})
+            }
             res.writeHead(204)
-            res.end(app.params.version)
+            res.end()
         })
     })
 
@@ -112,11 +129,18 @@ module.exports = function (db, opts) {
                     return app.log.error(err)
                 }
 
+                if (isJsonRequest(req)) {
+                    return app.send(200, {key: data.key, prev: app.params.version})
+                }
                 res.writeHead(204)
-                res.end(data.key)
+                res.end()
             })
         })
     })
 
     return host
+}
+
+function isJsonRequest (req) {
+    return qs.parse(url.parse(req.url).query).format
 }
