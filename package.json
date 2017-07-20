@@ -1,13 +1,14 @@
 {
   "name": "samizdat-host",
-  "version": "2.1.0",
+  "version": "3.0.0",
   "main": "index.js",
   "scripts": {
     "test": "node test.js | merry"
   },
   "dependencies": {
+    "collect-stream": "^1.2.1",
     "merry": "^5.3.3",
-    "samizdat-db": "^1.0.0"
+    "samizdat-db": "^2.0.0"
   },
   "devDependencies": {
     "level": "^1.7.0"
@@ -19,6 +20,6 @@
   "bugs": {
     "url": "https://github.com/distilledpm/samizdat-host/issues"
   },
-  "author": "",
-  "license": "MIT"
+  "author": "Brecht Savelkoul <brecht@distilled.pm>",
+  "license": "GPL"
 }

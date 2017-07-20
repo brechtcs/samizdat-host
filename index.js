@@ -1,3 +1,4 @@
+var collect = require('collect-stream')
 var merry = require('merry')
 var qs = require('querystring')
 var samizdat = require('samizdat-db')
@@ -47,13 +48,13 @@ module.exports = function (db, opts) {
     })
 
     host.route('POST', '/docs/:id', function (req, res, app) {
-        var body = ''
+        collect(req, function (err, body) {
+            if (err) {
+                res.writeHead(500)
+                res.end('server error\n')
+                return app.log.error(err)
+            }
 
-        req.on('data', function (data) {
-            body += data
-        })
-
-        req.on('end', function () {
             db.create(app.params.id, body, function (err, data) {
                 if (err) {
                     if (err.docExists) {
@@ -115,13 +116,13 @@ module.exports = function (db, opts) {
     })
 
     host.route('POST', '/versions/:version', function (req, res, app) {
-        var body = ''
+        collect(req, function (err, body) {
+            if (err) {
+                res.writeHead(500)
+                res.end('server error\n')
+                return app.log.error(err)
+            }
 
-        req.on('data', function (data) {
-            body += data
-        })
-
-        req.on('end', function () {
             db.update(app.params.version, body, function (err, data) {
                 if (err) {
                     res.writeHead(500)
@@ -142,5 +143,5 @@ module.exports = function (db, opts) {
 }
 
 function isJsonRequest (req) {
-    return qs.parse(url.parse(req.url).query).format
+    return qs.parse(url.parse(req.url).query).output === 'json'
 }
