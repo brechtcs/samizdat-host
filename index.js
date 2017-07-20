@@ -1,5 +1,6 @@
 var collect = require('collect-stream')
 var merry = require('merry')
+var mime = require('mime-types')
 var qs = require('querystring')
 var samizdat = require('samizdat-db')
 var ts = require('samizdat-ts')
@@ -90,7 +91,7 @@ module.exports = function (db, opts) {
                 if (err.notFound) {
                     res.writeHead(404)
                     res.end('not found\n')
-                    return app.log.error(err)
+                    return
                 }
                 else {
                     return serverError(req, res, app)
@@ -100,8 +101,7 @@ module.exports = function (db, opts) {
             if (query.output === 'json') {
                 return app.send(200, {key: key, value: value})
             }
-            res.writeHead(200)
-            res.end(value)
+            sendValue(res, app.params.doc, value)
         })
     })
 
@@ -145,7 +145,40 @@ module.exports = function (db, opts) {
         })
     })
 
+    host.route('GET', '/_files/:doc', function (req, res, app) {
+        var stream = db._level.createKeyStream({reverse: true})
+
+        stream.on('data', function (key) {
+            if (ts.getId(key) === app.params.doc) {
+                stream.destroy()
+
+                db.read(key, function (err, value) {
+                    if (err) {
+                        return serverError(req, res, app)
+                    }
+                    sendValue(res, key, value)
+                })
+            }
+        })
+
+        stream.on('end', function () {
+            res.writeHead(404)
+            res.end('not found\n')
+        })
+
+        stream.on('error', app.log.error)
+    })
+
     return host
+}
+
+/**
+ * Helper functions
+ */
+function sendValue (res, doc, value) {
+    res.setHeader('Content-Type', mime.lookup(doc) || 'application/octet-stream')
+    res.writeHead(200)
+    res.end(value)
 }
 
 function serverError (req, res, app) {

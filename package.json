@@ -8,6 +8,7 @@
   "dependencies": {
     "collect-stream": "^1.2.1",
     "merry": "^5.3.3",
+    "mime-types": "^2.1.15",
     "samizdat-db": "^2.0.0",
     "samizdat-ts": "^1.0.0"
   },
@@ -22,5 +23,5 @@
     "url": "https://github.com/distilledpm/samizdat-host/issues"
   },
   "author": "Brecht Savelkoul <brecht@distilled.pm>",
-  "license": "GPL"
+  "license": "GPL-3.0"
 }
