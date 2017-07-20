@@ -2,6 +2,7 @@ var collect = require('collect-stream')
 var merry = require('merry')
 var qs = require('querystring')
 var samizdat = require('samizdat-db')
+var ts = require('samizdat-ts')
 var url = require('url')
 
 module.exports = function (db, opts) {
@@ -15,7 +16,7 @@ module.exports = function (db, opts) {
     var db = samizdat(db)
     var host = merry(opts)
 
-    host.route('GET', '/docs', function (req, res, app) {
+    host.route('GET', '/_data', function (req, res, app) {
         db.docs(function (err, docs) {
             if (err) {
                 res.writeHead(500)
@@ -31,13 +32,17 @@ module.exports = function (db, opts) {
         })
     })
 
-    host.route('GET', '/docs/:id', function (req, res, app) {
-        db.versions(app.params.id, function (err, versions) {
+    host.route('GET', '/_data/:doc', function (req, res, app) {
+        db.history(app.params.doc, function (err, history) {
             if (err) {
                 res.writeHead(500)
                 res.end('server error\n')
                 return app.log.error(err)
             }
+
+            var versions = history.map(function (key) {
+                return [ts.getCurrent(key), ts.getPrev(key)].join('-')
+            })
 
             if (isJsonRequest(req)) {
                 return app.send(200, versions)
@@ -47,7 +52,7 @@ module.exports = function (db, opts) {
         })
     })
 
-    host.route('POST', '/docs/:id', function (req, res, app) {
+    host.route('POST', '/_data/:doc', function (req, res, app) {
         collect(req, function (err, body) {
             if (err) {
                 res.writeHead(500)
@@ -55,7 +60,7 @@ module.exports = function (db, opts) {
                 return app.log.error(err)
             }
 
-            db.create(app.params.id, body, function (err, data) {
+            db.create(app.params.doc, body, function (err, data) {
                 if (err) {
                     if (err.docExists) {
                         res.writeHead(400)
@@ -77,8 +82,10 @@ module.exports = function (db, opts) {
         })
     })
 
-    host.route('GET', '/versions/:version', function (req, res, app) {
-        db.read(app.params.version, function (err, value) {
+    host.route('GET', '/_data/:doc/:version', function (req, res, app) {
+        var key = composeKey(app.params)
+
+        db.read(key, function (err, value) {
             if (err)  {
                 if (err.notFound) {
                     res.writeHead(404)
@@ -92,15 +99,17 @@ module.exports = function (db, opts) {
             }
 
             if (isJsonRequest(req)) {
-                return app.send(200, {key: app.params.version, value: value})
+                return app.send(200, {key: key, value: value})
             }
             res.writeHead(200)
             res.end(value)
         })
     })
 
-    host.route('DELETE', '/versions/:version', function (req, res, app) {
-        db.del(app.params.version, function (err) {
+    host.route('DELETE', '/_data/:doc/:version', function (req, res, app) {
+        var key = composeKey(app.params)
+
+        db.del(key, function (err) {
             if (err) {
                 res.writeHead(500)
                 res.end('server error\n')
@@ -108,14 +117,16 @@ module.exports = function (db, opts) {
             }
 
             if (isJsonRequest(req)) {
-                return app.send(200, {key: app.params.version})
+                return app.send(200, {key: key})
             }
             res.writeHead(204)
             res.end()
         })
     })
 
-    host.route('POST', '/versions/:version', function (req, res, app) {
+    host.route('POST', '/_data/:doc/:version', function (req, res, app) {
+        var key = composeKey(app.params)
+
         collect(req, function (err, body) {
             if (err) {
                 res.writeHead(500)
@@ -123,7 +134,7 @@ module.exports = function (db, opts) {
                 return app.log.error(err)
             }
 
-            db.update(app.params.version, body, function (err, data) {
+            db.update(key, body, function (err, data) {
                 if (err) {
                     res.writeHead(500)
                     res.end('server error\n')
@@ -131,7 +142,7 @@ module.exports = function (db, opts) {
                 }
 
                 if (isJsonRequest(req)) {
-                    return app.send(200, {key: data.key, prev: app.params.version})
+                    return app.send(200, {key: data.key, prev: data.prev})
                 }
                 res.writeHead(204)
                 res.end()
@@ -144,4 +155,8 @@ module.exports = function (db, opts) {
 
 function isJsonRequest (req) {
     return qs.parse(url.parse(req.url).query).output === 'json'
+}
+
+function composeKey (params) {
+    return [params.version, params.doc].join('-')
 }

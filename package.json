@@ -8,7 +8,8 @@
   "dependencies": {
     "collect-stream": "^1.2.1",
     "merry": "^5.3.3",
-    "samizdat-db": "^2.0.0"
+    "samizdat-db": "^2.0.0",
+    "samizdat-ts": "^1.0.0"
   },
   "devDependencies": {
     "level": "^1.7.0"
