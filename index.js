@@ -19,9 +19,7 @@ module.exports = function (db, opts) {
     host.route('GET', '/_data', function (req, res, app) {
         db.docs(function (err, docs) {
             if (err) {
-                res.writeHead(500)
-                res.end('server error\n')
-                return app.log.error(err)
+                return serverError(req, res, app)
             }
 
             if (isJsonRequest(req)) {
@@ -35,9 +33,7 @@ module.exports = function (db, opts) {
     host.route('GET', '/_data/:doc', function (req, res, app) {
         db.history(app.params.doc, function (err, history) {
             if (err) {
-                res.writeHead(500)
-                res.end('server error\n')
-                return app.log.error(err)
+                return serverError(req, res, app)
             }
 
             var versions = history.map(function (key) {
@@ -55,9 +51,7 @@ module.exports = function (db, opts) {
     host.route('POST', '/_data/:doc', function (req, res, app) {
         collect(req, function (err, body) {
             if (err) {
-                res.writeHead(500)
-                res.end('server error\n')
-                return app.log.error(err)
+                return serverError(req, res, app)
             }
 
             db.create(app.params.doc, body, function (err, data) {
@@ -65,12 +59,11 @@ module.exports = function (db, opts) {
                     if (err.docExists) {
                         res.writeHead(400)
                         res.end('document already exists\n')
+                        return app.log.warn(err)
                     }
                     else {
-                        res.writeHead(500)
-                        res.end('server error\n')
+                        return serverError(req, res, app)
                     }
-                    return app.log.error(err)
                 }
 
                 if (isJsonRequest(req)) {
@@ -90,12 +83,11 @@ module.exports = function (db, opts) {
                 if (err.notFound) {
                     res.writeHead(404)
                     res.end('not found\n')
+                    return app.log.error(err)
                 }
                 else {
-                    res.writeHead(500)
-                    res.end('server error\n')
+                    return serverError(req, res, app)
                 }
-                return app.log.error(err)
             }
 
             if (isJsonRequest(req)) {
@@ -111,9 +103,7 @@ module.exports = function (db, opts) {
 
         db.del(key, function (err) {
             if (err) {
-                res.writeHead(500)
-                res.end('server error\n')
-                return app.log.error(err)
+                return serverError(req, res, app)
             }
 
             if (isJsonRequest(req)) {
@@ -129,16 +119,12 @@ module.exports = function (db, opts) {
 
         collect(req, function (err, body) {
             if (err) {
-                res.writeHead(500)
-                res.end('server error\n')
-                return app.log.error(err)
+                return serverError(req, res, app)
             }
 
             db.update(key, body, function (err, data) {
                 if (err) {
-                    res.writeHead(500)
-                    res.end('server error\n')
-                    return app.log.error(err)
+                    return serverError(req, res, app)
                 }
 
                 if (isJsonRequest(req)) {
@@ -151,6 +137,12 @@ module.exports = function (db, opts) {
     })
 
     return host
+}
+
+function serverError (req, res, app) {
+    res.writeHead(500)
+    res.end('server error\n')
+    app.log.error(err)
 }
 
 function isJsonRequest (req) {
