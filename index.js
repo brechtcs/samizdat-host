@@ -17,12 +17,14 @@ module.exports = function (db, opts) {
     var host = merry(opts)
 
     host.route('GET', '/_data', function (req, res, app) {
+        var query = getQuery(req)
+
         db.docs(function (err, docs) {
             if (err) {
                 return serverError(req, res, app)
             }
 
-            if (isJsonRequest(req)) {
+            if (query.output === 'json') {
                 return app.send(200, docs)
             }
             res.writeHead(200)
@@ -31,6 +33,8 @@ module.exports = function (db, opts) {
     })
 
     host.route('GET', '/_data/:doc', function (req, res, app) {
+        var query = getQuery(req)
+
         db.history(app.params.doc, function (err, history) {
             if (err) {
                 return serverError(req, res, app)
@@ -40,7 +44,7 @@ module.exports = function (db, opts) {
                 return [ts.getCurrent(key), ts.getPrev(key)].join('-')
             })
 
-            if (isJsonRequest(req)) {
+            if (query.output === 'json') {
                 return app.send(200, versions)
             }
             res.writeHead(200)
@@ -49,6 +53,8 @@ module.exports = function (db, opts) {
     })
 
     host.route('POST', '/_data/:doc', function (req, res, app) {
+        var query = getQuery(req)
+
         collect(req, function (err, body) {
             if (err) {
                 return serverError(req, res, app)
@@ -66,7 +72,7 @@ module.exports = function (db, opts) {
                     }
                 }
 
-                if (isJsonRequest(req)) {
+                if (query.output === 'json') {
                     return app.send(200, {key: data.key})
                 }
                 res.writeHead(204)
@@ -76,7 +82,8 @@ module.exports = function (db, opts) {
     })
 
     host.route('GET', '/_data/:doc/:version', function (req, res, app) {
-        var key = composeKey(app.params)
+        var key = getKey(app.params)
+        var query = getQuery(req)
 
         db.read(key, function (err, value) {
             if (err)  {
@@ -90,7 +97,7 @@ module.exports = function (db, opts) {
                 }
             }
 
-            if (isJsonRequest(req)) {
+            if (query.output === 'json') {
                 return app.send(200, {key: key, value: value})
             }
             res.writeHead(200)
@@ -99,14 +106,15 @@ module.exports = function (db, opts) {
     })
 
     host.route('DELETE', '/_data/:doc/:version', function (req, res, app) {
-        var key = composeKey(app.params)
+        var key = getKey(app.params)
+        var query = getQuery(req)
 
         db.del(key, function (err) {
             if (err) {
                 return serverError(req, res, app)
             }
 
-            if (isJsonRequest(req)) {
+            if (query.output === 'json') {
                 return app.send(200, {key: key})
             }
             res.writeHead(204)
@@ -115,7 +123,8 @@ module.exports = function (db, opts) {
     })
 
     host.route('POST', '/_data/:doc/:version', function (req, res, app) {
-        var key = composeKey(app.params)
+        var key = getKey(app.params)
+        var query = getQuery(req)
 
         collect(req, function (err, body) {
             if (err) {
@@ -127,7 +136,7 @@ module.exports = function (db, opts) {
                     return serverError(req, res, app)
                 }
 
-                if (isJsonRequest(req)) {
+                if (query.output === 'json') {
                     return app.send(200, {key: data.key, prev: data.prev})
                 }
                 res.writeHead(204)
@@ -145,10 +154,10 @@ function serverError (req, res, app) {
     app.log.error(err)
 }
 
-function isJsonRequest (req) {
-    return qs.parse(url.parse(req.url).query).output === 'json'
+function getKey (params) {
+    return [params.version, params.doc].join('-')
 }
 
-function composeKey (params) {
-    return [params.version, params.doc].join('-')
+function getQuery (req) {
+    return qs.parse(url.parse(req.url).query)
 }
