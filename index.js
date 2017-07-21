@@ -22,7 +22,12 @@ module.exports = function (db, opts) {
 
         db.docs(function (err, docs) {
             if (err) {
-                return serverError(req, res, app)
+                if (err.notFound) {
+                    return notFound(req, res, app)
+                }
+                else {
+                    return serverError(req, res, app)
+                }
             }
 
             if (query.output === 'json') {
@@ -38,7 +43,12 @@ module.exports = function (db, opts) {
 
         db.history(app.params.doc, function (err, history) {
             if (err) {
-                return serverError(req, res, app)
+                if (err.notFound) {
+                    return notFound(req, res, app)
+                }
+                else {
+                    return serverError(req, res, app)
+                }
             }
 
             var versions = history.map(function (key) {
@@ -89,9 +99,7 @@ module.exports = function (db, opts) {
         db.read(key, function (err, value) {
             if (err)  {
                 if (err.notFound) {
-                    res.writeHead(404)
-                    res.end('not found\n')
-                    return
+                    return notFound(req, res, app)
                 }
                 else {
                     return serverError(req, res, app)
@@ -162,8 +170,7 @@ module.exports = function (db, opts) {
         })
 
         stream.on('end', function () {
-            res.writeHead(404)
-            res.end('not found\n')
+            notFound(req, res, app)
         })
 
         stream.on('error', app.log.error)
@@ -179,6 +186,11 @@ function sendValue (res, doc, value) {
     res.setHeader('Content-Type', mime.lookup(doc) || 'application/octet-stream')
     res.writeHead(200)
     res.end(value)
+}
+
+function notFound (req, res, app) {
+    res.writeHead(404)
+    res.end('not found\n')
 }
 
 function serverError (req, res, app) {
