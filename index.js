@@ -154,7 +154,7 @@ module.exports = function (db, opts) {
     })
 
     host.route('GET', '/_files/:doc', function (req, res, app) {
-        var stream = db._level.createKeyStream({reverse: true})
+        var stream = db.stream({reverse: true, values: false})
 
         stream.on('data', function (key) {
             if (ts.getId(key) === app.params.doc) {

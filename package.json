@@ -9,8 +9,8 @@
     "collect-stream": "^1.2.1",
     "merry": "^5.3.3",
     "mime-types": "^2.1.15",
-    "samizdat-db": "^2.0.2",
-    "samizdat-ts": "^1.0.1"
+    "samizdat-db": "^2.1.0",
+    "samizdat-ts": "^1.0.3"
   },
   "devDependencies": {
     "level": "^1.7.0"
