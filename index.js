@@ -1,7 +1,9 @@
 var collect = require('collect-stream')
+var json = require('JSONStream')
 var merry = require('merry')
 var mime = require('mime-types')
 var qs = require('querystring')
+var request = require('request')
 var samizdat = require('samizdat-db')
 var ts = require('samizdat-ts')
 var url = require('url')
@@ -174,6 +176,34 @@ module.exports = function (db, opts) {
         })
 
         stream.on('error', app.log.error)
+    })
+
+    host.route('GET', '/_sync', function (req, res) {
+        return db.stream().pipe(json.stringify()).pipe(res)
+    })
+
+    host.route('POST', '/_sync', function (req, res, app) {
+        collect(req, function (err, url) {
+            if (err) {
+                return serverError(req, res, app)
+            }
+
+            request(url + '/_sync').pipe(json.parse('*')).on('data', function (data) {
+                db.read(data.key, function (err) {
+                    if (!err || !err.notFound) return
+
+                    db._level.put(data.key, data.value, function (err) {
+                        if (err) return serverError(req, res, app)
+                    })
+                })
+            }).on('end', function () {
+                app.log.info('synchronsation from ' + url + ' completed')
+                res.writeHead(204)
+                res.end()
+            }).on('error', function (err) {
+                serverError(req, res, app)
+            })
+        })
     })
 
     return host
