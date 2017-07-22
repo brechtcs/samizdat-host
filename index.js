@@ -25,10 +25,10 @@ module.exports = function (db, opts) {
         db.docs(function (err, docs) {
             if (err) {
                 if (err.notFound) {
-                    return notFound(req, res, app)
+                    return notFound(res)
                 }
                 else {
-                    return serverError(req, res, app)
+                    return serverError(res, app, err)
                 }
             }
 
@@ -46,10 +46,10 @@ module.exports = function (db, opts) {
         db.history(app.params.doc, function (err, history) {
             if (err) {
                 if (err.notFound) {
-                    return notFound(req, res, app)
+                    return notFound(res)
                 }
                 else {
-                    return serverError(req, res, app)
+                    return serverError(res, app, err)
                 }
             }
 
@@ -70,7 +70,7 @@ module.exports = function (db, opts) {
 
         collect(req, function (err, body) {
             if (err) {
-                return serverError(req, res, app)
+                return serverError(res, app, err)
             }
 
             db.create(app.params.doc, body, function (err, data) {
@@ -81,7 +81,7 @@ module.exports = function (db, opts) {
                         return app.log.warn(err)
                     }
                     else {
-                        return serverError(req, res, app)
+                        return serverError(res, app, err)
                     }
                 }
 
@@ -101,10 +101,10 @@ module.exports = function (db, opts) {
         db.read(key, function (err, value) {
             if (err)  {
                 if (err.notFound) {
-                    return notFound(req, res, app)
+                    return notFound(res)
                 }
                 else {
-                    return serverError(req, res, app)
+                    return serverError(res, app, err)
                 }
             }
 
@@ -121,7 +121,7 @@ module.exports = function (db, opts) {
 
         db.del(key, function (err) {
             if (err) {
-                return serverError(req, res, app)
+                return serverError(res, app, err)
             }
 
             if (query.output === 'json') {
@@ -138,12 +138,12 @@ module.exports = function (db, opts) {
 
         collect(req, function (err, body) {
             if (err) {
-                return serverError(req, res, app)
+                return serverError(res, app, err)
             }
 
             db.update(key, body, function (err, data) {
                 if (err) {
-                    return serverError(req, res, app)
+                    return serverError(res, app, err)
                 }
 
                 if (query.output === 'json') {
@@ -164,7 +164,7 @@ module.exports = function (db, opts) {
 
                 db.read(key, function (err, value) {
                     if (err) {
-                        return serverError(req, res, app)
+                        return serverError(res, app, err)
                     }
                     sendValue(res, key, value)
                 })
@@ -172,7 +172,7 @@ module.exports = function (db, opts) {
         })
 
         stream.on('end', function () {
-            notFound(req, res, app)
+            notFound(res)
         })
 
         stream.on('error', app.log.error)
@@ -185,7 +185,7 @@ module.exports = function (db, opts) {
     host.route('POST', '/_sync', function (req, res, app) {
         collect(req, function (err, url) {
             if (err) {
-                return serverError(req, res, app)
+                return serverError(res, app, err)
             }
 
             request(url + '/_sync').pipe(json.parse('*')).on('data', function (data) {
@@ -193,7 +193,7 @@ module.exports = function (db, opts) {
                     if (!err || !err.notFound) return
 
                     db._level.put(data.key, data.value, function (err) {
-                        if (err) return serverError(req, res, app)
+                        if (err) return serverError(res, app, err)
                     })
                 })
             }).on('end', function () {
@@ -201,7 +201,7 @@ module.exports = function (db, opts) {
                 res.writeHead(204)
                 res.end()
             }).on('error', function (err) {
-                serverError(req, res, app)
+                serverError(res, app, err)
             })
         })
     })
@@ -218,12 +218,15 @@ function sendValue (res, doc, value) {
     res.end(value)
 }
 
-function notFound (req, res, app) {
+function notFound (res, app, msg) {
     res.writeHead(404)
     res.end('not found\n')
+    if (app && msg) {
+        app.log.info(msg)
+    }
 }
 
-function serverError (req, res, app) {
+function serverError (res, app, err) {
     res.writeHead(500)
     res.end('server error\n')
     app.log.error(err)
