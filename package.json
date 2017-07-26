@@ -1,6 +1,6 @@
 {
   "name": "samizdat-host",
-  "version": "3.2.0",
+  "version": "3.2.1",
   "main": "index.js",
   "scripts": {
     "test": "node test.js | merry"
@@ -19,10 +19,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/distilledpm/samizdat-host.git"
+    "url": "git+https://github.com/pamphlets/samizdat-host.git"
   },
   "bugs": {
-    "url": "https://github.com/distilledpm/samizdat-host/issues"
+    "url": "https://github.com/pamphlets/samizdat-host/issues"
   },
   "author": "Brecht Savelkoul <brecht@distilled.pm>",
   "license": "GPL-3.0"
