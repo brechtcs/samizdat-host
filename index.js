@@ -2,9 +2,13 @@ var collect = require('collect-stream')
 var json = require('JSONStream')
 var merry = require('merry')
 var mime = require('mime-types')
+var parse = require('pull-json-parse')
+var pull = require('pull-stream')
 var qs = require('querystring')
 var request = require('request')
 var samizdat = require('samizdat-db')
+var stream = require('stream-to-pull-stream')
+var stringify = require('pull-stringify')
 var ts = require('samizdat-ts')
 var url = require('url')
 
@@ -155,31 +159,24 @@ module.exports = function (db, opts) {
         })
     })
 
-    host.route('GET', '/_files/:doc', function (req, res, app) {
-        var stream = db.stream({reverse: true, values: false})
+    host.route('GET', '/_sync', function (req, res, app) {
+        var jsonOpts = {
+            indent: false,
+            open: '[\n',
+            prefix: ',\n',
+            suffix: '',
+            close: '\n]\n'
+        }
 
-        stream.on('data', function (key) {
-            if (ts.getId(key) === app.params.doc) {
-                stream.destroy()
-
-                db.read(key, function (err, value) {
-                    if (err) {
-                        return serverError(res, app, err)
-                    }
-                    sendValue(res, key, value)
-                })
-            }
-        })
-
-        stream.on('end', function () {
-            notFound(res)
-        })
-
-        stream.on('error', app.log.error)
-    })
-
-    host.route('GET', '/_sync', function (req, res) {
-        return db.stream().pipe(json.stringify()).pipe(res)
+        pull(
+            db.source(),
+            stringify(jsonOpts),
+            stream.sink(res, function (err) {
+                if (err) {
+                    return serverError(res, app, err)
+                }
+            })
+        )
     })
 
     host.route('POST', '/_sync', function (req, res, app) {
@@ -187,22 +184,21 @@ module.exports = function (db, opts) {
             if (err) {
                 return serverError(res, app, err)
             }
+            var get = request(url + '/_sync')
 
-            request(url + '/_sync').pipe(json.parse('*')).on('data', function (data) {
-                db.read(data.key, function (err) {
-                    if (!err || !err.notFound) return
+            pull(
+                stream.source(get),
+                parse,
+                db.sink(function (err) {
+                    if (err) {
+                        return serverError(res, app, err)
+                    }
 
-                    db._level.put(data.key, data.value, function (err) {
-                        if (err) return serverError(res, app, err)
-                    })
+                    app.log.info('synchronsation from ' + url + ' completed')
+                    res.writeHead(204)
+                    res.end()
                 })
-            }).on('end', function () {
-                app.log.info('synchronsation from ' + url + ' completed')
-                res.writeHead(204)
-                res.end()
-            }).on('error', function (err) {
-                serverError(res, app, err)
-            })
+            )
         })
     })
 
