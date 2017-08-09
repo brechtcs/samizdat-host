@@ -23,7 +23,7 @@ module.exports = function (db, opts) {
     var db = samizdat(db)
     var host = merry(opts)
 
-    host.route('GET', '/_data', function (req, res, app) {
+    host.route('GET', '/_files', function (req, res, app) {
         var query = getQuery(req)
 
         db.docs(function (err, docs) {
@@ -44,7 +44,7 @@ module.exports = function (db, opts) {
         })
     })
 
-    host.route('GET', '/_data/:doc', function (req, res, app) {
+    host.route('GET', '/_files/:doc', function (req, res, app) {
         var query = getQuery(req)
 
         db.history(app.params.doc, function (err, history) {
@@ -69,7 +69,7 @@ module.exports = function (db, opts) {
         })
     })
 
-    host.route('POST', '/_data/:doc', function (req, res, app) {
+    host.route('POST', '/_files/:doc', function (req, res, app) {
         var query = getQuery(req)
 
         collect(req, function (err, body) {
@@ -98,7 +98,7 @@ module.exports = function (db, opts) {
         })
     })
 
-    host.route('GET', '/_data/:doc/:version', function (req, res, app) {
+    host.route('GET', '/_files/:doc/:version', function (req, res, app) {
         var key = getKey(app.params)
         var query = getQuery(req)
 
@@ -119,7 +119,7 @@ module.exports = function (db, opts) {
         })
     })
 
-    host.route('DELETE', '/_data/:doc/:version', function (req, res, app) {
+    host.route('DELETE', '/_files/:doc/:version', function (req, res, app) {
         var key = getKey(app.params)
         var query = getQuery(req)
 
@@ -136,7 +136,7 @@ module.exports = function (db, opts) {
         })
     })
 
-    host.route('POST', '/_data/:doc/:version', function (req, res, app) {
+    host.route('POST', '/_files/:doc/:version', function (req, res, app) {
         var key = getKey(app.params)
         var query = getQuery(req)
 
