@@ -1,8 +1,10 @@
 var host = require('./')
 var level = require('level')
 var minimist = require('minimist')
+var samizdat = require('samizdat-db')
 
-var server = host(level('data'), {logLevel: 'trace'})
+var db = level('data')
+var server = host(samizdat(db), {logLevel: 'trace'})
 
 server.route('GET', '/*', function (req, res, app) {
     app.send(404, 'endpoint does not exist\n')

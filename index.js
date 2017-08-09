@@ -6,13 +6,12 @@ var parse = require('pull-json-parse')
 var pull = require('pull-stream')
 var qs = require('querystring')
 var request = require('request')
-var samizdat = require('samizdat-db')
 var stream = require('stream-to-pull-stream')
 var stringify = require('pull-stringify')
 var ts = require('samizdat-ts')
 var url = require('url')
 
-module.exports = function (db, opts) {
+module.exports = function (store, opts) {
     if (!opts) {
         opts = {}
     }
@@ -20,13 +19,12 @@ module.exports = function (db, opts) {
         opts.logLevel = 'fatal'
     }
 
-    var db = samizdat(db)
     var host = merry(opts)
 
     host.route('GET', '/_files', function (req, res, app) {
         var query = getQuery(req)
 
-        db.docs(function (err, docs) {
+        store.docs(function (err, docs) {
             if (err) {
                 if (err.notFound) {
                     return notFound(res)
@@ -47,7 +45,7 @@ module.exports = function (db, opts) {
     host.route('GET', '/_files/:doc', function (req, res, app) {
         var query = getQuery(req)
 
-        db.history(app.params.doc, function (err, history) {
+        store.history(app.params.doc, function (err, history) {
             if (err) {
                 if (err.notFound) {
                     return notFound(res)
@@ -77,7 +75,7 @@ module.exports = function (db, opts) {
                 return serverError(res, app, err)
             }
 
-            db.create(app.params.doc, body, function (err, data) {
+            store.create(app.params.doc, body, function (err, data) {
                 if (err) {
                     if (err.docExists) {
                         res.writeHead(400)
@@ -102,7 +100,7 @@ module.exports = function (db, opts) {
         var key = getKey(app.params)
         var query = getQuery(req)
 
-        db.read(key, function (err, value) {
+        store.read(key, function (err, value) {
             if (err)  {
                 if (err.notFound) {
                     return notFound(res)
@@ -123,7 +121,7 @@ module.exports = function (db, opts) {
         var key = getKey(app.params)
         var query = getQuery(req)
 
-        db.del(key, function (err) {
+        store.del(key, function (err) {
             if (err) {
                 return serverError(res, app, err)
             }
@@ -145,7 +143,7 @@ module.exports = function (db, opts) {
                 return serverError(res, app, err)
             }
 
-            db.update(key, body, function (err, data) {
+            store.update(key, body, function (err, data) {
                 if (err) {
                     return serverError(res, app, err)
                 }
@@ -169,7 +167,7 @@ module.exports = function (db, opts) {
         }
 
         pull(
-            db.source(),
+            store.source(),
             stringify(jsonOpts),
             stream.sink(res, function (err) {
                 if (err) {
@@ -189,7 +187,7 @@ module.exports = function (db, opts) {
             pull(
                 stream.source(get),
                 parse,
-                db.sink(function (err) {
+                store.sink(function (err) {
                     if (err) {
                         return serverError(res, app, err)
                     }
