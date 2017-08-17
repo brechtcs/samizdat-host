@@ -95,6 +95,27 @@ module.exports = function (store, opts) {
         })
     })
 
+    host.route('GET', '/_files/:doc/_latest', function (req, res, app) {
+        var query = getQuery(req)
+
+        store.latest(app.params.doc, function (err, data) {
+            if (err)  {
+                if (err.notFound) {
+                    //return notFound(res)
+                    return
+                }
+                else {
+                    return serverError(res, app, err)
+                }
+            }
+
+            if (query.output === 'json') {
+                return app.send(200, data)
+            }
+            sendValue(res, app.params.doc, data.value)
+        })
+    })
+
     host.route('GET', '/_files/:doc/:version', function (req, res, app) {
         var key = getKey(app.params)
         var query = getQuery(req)
