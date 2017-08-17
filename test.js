@@ -3,7 +3,7 @@ var level = require('level')
 var minimist = require('minimist')
 var samizdat = require('samizdat-db')
 
-var db = level('data')
+var db = level('data', {valueEncoding: 'binary'})
 var server = host(samizdat(db), {logLevel: 'trace'})
 
 server.route('GET', '/*', function (req, res, app) {
