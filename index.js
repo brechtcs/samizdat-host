@@ -1,5 +1,4 @@
 var collect = require('collect-stream')
-var json = require('JSONStream')
 var merry = require('merry')
 var mime = require('mime-types')
 var parse = require('pull-json-parse')
