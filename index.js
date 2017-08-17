@@ -101,8 +101,7 @@ module.exports = function (store, opts) {
         store.latest(app.params.doc, function (err, data) {
             if (err)  {
                 if (err.notFound) {
-                    //return notFound(res)
-                    return
+                    return notFound(res)
                 }
                 else {
                     return serverError(res, app, err)
